@@ -1,4 +1,5 @@
 import 'package:bytebank_final/components/editor.dart';
+import 'package:bytebank_final/database/dao/contacts_dao.dart';
 import 'package:bytebank_final/models/contact.dart';
 import 'package:flutter/material.dart';
 
@@ -13,6 +14,7 @@ class _ContactFormState extends State<ContactForm> {
   final TextEditingController _contactNameController = TextEditingController();
   final TextEditingController _accountNumberController =
       TextEditingController();
+  final ContactsDao _dao = ContactsDao();
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -56,18 +58,15 @@ class _ContactFormState extends State<ContactForm> {
     );
   }
 
-  void _createContact(BuildContext context) {
+  void _createContact(BuildContext context) async {
     final String? contactName = _contactNameController.text;
     final int? contactAccountNumber =
         int.tryParse(_accountNumberController.text);
     if (contactName != null && contactAccountNumber != null) {
       final createdContact = Contact(0, contactName, contactAccountNumber);
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('$createdContact'),
-        ),
-      );
-      Navigator.pop(context, createdContact);
+
+      await _dao.save(createdContact);
+      Navigator.pop(context);
     }
   }
 }
