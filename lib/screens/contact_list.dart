@@ -1,6 +1,8 @@
 import 'package:bytebank_final/database/dao/contacts_dao.dart';
 import 'package:bytebank_final/models/contact.dart';
+import 'package:bytebank_final/components/loading_circle.dart';
 import 'package:bytebank_final/screens/contact_form.dart';
+import 'package:bytebank_final/screens/new_transfer_form.dart';
 import 'package:flutter/material.dart';
 
 class ContactList extends StatefulWidget {
@@ -16,7 +18,7 @@ class _ContactListState extends State<ContactList> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text('Contatos'),
+        title: Text('Transferir'),
       ),
       body: FutureBuilder<List<Contact>>(
         initialData: const [],
@@ -26,19 +28,7 @@ class _ContactListState extends State<ContactList> {
             case ConnectionState.none:
               break;
             case ConnectionState.waiting:
-              return Center(
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  crossAxisAlignment: CrossAxisAlignment.center,
-                  children: const <Widget>[
-                    CircularProgressIndicator(),
-                    Padding(
-                      padding: EdgeInsets.all(16.0),
-                      child: Text('Loading'),
-                    )
-                  ],
-                ),
-              );
+              return LoadingCircle();
 
             case ConnectionState.active:
               break;
@@ -50,7 +40,16 @@ class _ContactListState extends State<ContactList> {
                 itemCount: _contactList.length,
                 itemBuilder: (context, index) {
                   final contact = _contactList[index];
-                  return _ContactTile(contact);
+                  return _ContactTile(contact, onClick: () {
+                    Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                            builder: (context) => TransferForm(
+                                  contactName: contact.contactName,
+                                  contactAccountNumber:
+                                      contact.contactAccountNumber,
+                                )));
+                  });
                 },
               );
           }
@@ -76,17 +75,26 @@ class _ContactListState extends State<ContactList> {
 
 class _ContactTile extends StatelessWidget {
   final Contact _contact;
-  const _ContactTile(this._contact, {Key? key}) : super(key: key);
+  final Function? onClick;
+  const _ContactTile(
+    this._contact, {
+    Key? key,
+    @required this.onClick,
+  })  : assert(onClick != null),
+        super(key: key);
 
   @override
   Widget build(BuildContext context) {
-    return Card(
-      child: ListTile(
-        title: Text(
-          _contact.contactName.toString(),
-          style: TextStyle(fontSize: 24.0),
+    return InkWell(
+      onTap: () => onClick!(),
+      child: Card(
+        child: ListTile(
+          title: Text(
+            _contact.contactName.toString(),
+            style: TextStyle(fontSize: 24.0),
+          ),
+          subtitle: Text(_contact.contactAccountNumber.toString()),
         ),
-        subtitle: Text(_contact.contactAccountNumber.toString()),
       ),
     );
   }

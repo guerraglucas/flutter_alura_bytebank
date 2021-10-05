@@ -23,21 +23,21 @@ class _ContactFormState extends State<ContactForm> {
       ),
       body: SingleChildScrollView(
         child: Padding(
-          padding: const EdgeInsets.all(16.0),
+          padding: const EdgeInsets.all(8.0),
           child: Column(
             children: <Widget>[
               Editor(
                 controller: _contactNameController,
                 fieldHint: 'João da Silva',
                 fieldName: 'Nome Completo',
-                icon: Icon(Icons.perm_contact_cal, color: Colors.orange[800]),
+                icon: Icon(Icons.perm_contact_cal),
                 keyboardType: TextInputType.text,
               ),
               Editor(
                 controller: _accountNumberController,
                 fieldHint: '00000',
                 fieldName: 'Número da conta',
-                icon: Icon(Icons.account_balance, color: Colors.orange[800]),
+                icon: Icon(Icons.account_balance),
                 keyboardType: TextInputType.number,
               ),
               Padding(
