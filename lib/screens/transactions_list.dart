@@ -1,6 +1,6 @@
 import 'package:bytebank_final/components/centered_message.dart';
-import 'package:bytebank_final/http/webclient.dart';
 import 'package:bytebank_final/components/loading_circle.dart';
+import 'package:bytebank_final/http/webclients/transactions_webclient.dart';
 
 import 'package:bytebank_final/models/transaction.dart';
 import 'package:flutter/material.dart';
@@ -13,6 +13,7 @@ class TransactionsList extends StatefulWidget {
 }
 
 class _TransactionsListState extends State<TransactionsList> {
+  final TransactionWebclient _webclient = TransactionWebclient();
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -21,7 +22,7 @@ class _TransactionsListState extends State<TransactionsList> {
       ),
       body: FutureBuilder<List<Transaction>>(
           initialData: const [],
-          future: findAll(),
+          future: _webclient.findAll(),
           builder: (context, snapshot) {
             switch (snapshot.connectionState) {
               case ConnectionState.none:
@@ -77,7 +78,7 @@ class _TransactionTile extends StatelessWidget {
           ),
         ),
         subtitle: Text(
-          transaction!.contact.contactAccountNumber.toString(),
+          'Para: ${transaction!.contact.contactName} || Conta: ${transaction!.contact.contactAccountNumber}',
           style: TextStyle(
             fontSize: 16.0,
           ),

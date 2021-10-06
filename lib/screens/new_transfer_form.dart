@@ -1,5 +1,5 @@
 import 'package:bytebank_final/components/editor.dart';
-import 'package:bytebank_final/http/webclient.dart';
+import 'package:bytebank_final/http/webclients/transactions_webclient.dart';
 import 'package:bytebank_final/models/contact.dart';
 import 'package:bytebank_final/models/transaction.dart';
 import 'package:flutter/material.dart';
@@ -23,6 +23,7 @@ class TransferForm extends StatefulWidget {
 class _TransferFormState extends State<TransferForm> {
   final TextEditingController _amountController = TextEditingController();
   final TextEditingController _descriptionController = TextEditingController();
+  final TransactionWebclient _webclient = TransactionWebclient();
 
   @override
   Widget build(BuildContext context) {
@@ -83,13 +84,15 @@ class _TransferFormState extends State<TransferForm> {
   }
 
   void _saveTransfer(BuildContext context) {
-    save(Transaction(
-        double.tryParse(_amountController.text),
-        Contact(
-          0,
-          widget.contactName,
-          widget.contactAccountNumber,
-        ))).then((transactionResponse) {
+    _webclient
+        .save(Transaction(
+            double.tryParse(_amountController.text),
+            Contact(
+              0,
+              widget.contactName,
+              widget.contactAccountNumber,
+            )))
+        .then((transactionResponse) {
       Navigator.pop(context);
     });
   }
