@@ -7,18 +7,17 @@ class TransactionWebclient {
   Future<List<Transaction>> findAll() async {
     final http.Response response =
         await client.get(baseUrl).timeout(Duration(seconds: 10));
-    List<Transaction> transactions = jsonDecode(response.body)
+
+    final List<dynamic> decodedJson = jsonDecode(response.body);
+    return decodedJson
         .map((dynamic json) => Transaction.fromJson(json))
         .toList();
-
-    return transactions;
   }
 
-  Future<Transaction> save(Transaction transaction) async {
+  Future<http.Response> save(Transaction transaction, String password) async {
     String transactionJson = jsonEncode(transaction);
-    final http.Response response = await client.post(baseUrl,
-        headers: {'Content-type': 'application/json', 'password': '1000'},
+    return await client.post(baseUrl,
+        headers: {'Content-type': 'application/json', 'password': password},
         body: transactionJson);
-    return Transaction.fromJson(jsonDecode(response.body));
   }
 }

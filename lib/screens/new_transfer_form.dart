@@ -1,8 +1,10 @@
 import 'package:bytebank_final/components/editor.dart';
+import 'package:bytebank_final/components/transaction_auth_dialog.dart';
 import 'package:bytebank_final/http/webclients/transactions_webclient.dart';
 import 'package:bytebank_final/models/contact.dart';
 import 'package:bytebank_final/models/transaction.dart';
 import 'package:flutter/material.dart';
+import 'package:http/http.dart';
 
 class TransferForm extends StatefulWidget {
   final String? contactName;
@@ -24,6 +26,7 @@ class _TransferFormState extends State<TransferForm> {
   final TextEditingController _amountController = TextEditingController();
   final TextEditingController _descriptionController = TextEditingController();
   final TransactionWebclient _webclient = TransactionWebclient();
+  late String userPassword;
 
   @override
   Widget build(BuildContext context) {
@@ -72,28 +75,79 @@ class _TransferFormState extends State<TransferForm> {
             Padding(
               padding: const EdgeInsets.only(top: 16),
               child: ElevatedButton(
-                  onPressed: () {
-                    _saveTransfer(context);
+                  onPressed: () async {
+                    //Inserir AlertDialog
+
+                    switch (await showDialog(
+                        context: context,
+                        builder: (BuildContext contextDialog) {
+                          return TransactionAuthDialog(
+                            onConfirm: (passwordController) {
+                              return _saveTransfer(context, passwordController);
+                            },
+                          );
+                        })) {
+                      case IsAuthenticated.authenticated:
+                        break;
+
+                      case IsAuthenticated.notAtuthenticated:
+                        return showDialog(
+                            context: context,
+                            builder: (BuildContext context) {
+                              return AlertDialog(
+                                content: Text('Incorrect Password'),
+                                actions: [
+                                  TextButton(
+                                    onPressed: () {
+                                      Navigator.pop(context);
+                                    },
+                                    child: Text('Try Again'),
+                                  ),
+                                ],
+                              );
+                            });
+
+                      case IsAuthenticated.cancelled:
+                        break;
+
+                      case IsAuthenticated.badRequest:
+                        return showDialog(
+                            context: context,
+                            builder: (BuildContext context) {
+                              return AlertDialog(
+                                content: Text(
+                                    'Blank value, please fill the amount to transfer'),
+                                actions: [
+                                  TextButton(
+                                    onPressed: () {
+                                      Navigator.pop(context);
+                                    },
+                                    child: Text('Try Again'),
+                                  ),
+                                ],
+                              );
+                            });
+                    }
                   },
                   child: Text('Confirmar Transferência')),
-            )
+            ),
           ],
         ),
       ),
     );
   }
 
-  void _saveTransfer(BuildContext context) {
-    _webclient
-        .save(Transaction(
-            double.tryParse(_amountController.text),
-            Contact(
-              0,
-              widget.contactName,
-              widget.contactAccountNumber,
-            )))
-        .then((transactionResponse) {
-      Navigator.pop(context);
-    });
+  Future<Response> _saveTransfer(BuildContext context, String password) {
+    return _webclient.save(
+      Transaction(
+        double.tryParse(_amountController.text),
+        Contact(
+          0,
+          widget.contactName,
+          widget.contactAccountNumber,
+        ),
+      ),
+      password.toString(),
+    );
   }
 }
