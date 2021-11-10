@@ -4,12 +4,9 @@ import 'package:bytebank_final/http/webclients/transactions_webclient.dart';
 import 'package:bytebank_final/models/contact.dart';
 import 'package:bytebank_final/models/transaction.dart';
 import 'package:flutter/material.dart';
-import 'package:http/http.dart';
+import '../components/response_dialog.dart';
 
 class TransferForm extends StatefulWidget {
-  final String? contactName;
-  final int? contactAccountNumber;
-
   const TransferForm(
       {Key? key,
       @required this.contactName,
@@ -18,15 +15,48 @@ class TransferForm extends StatefulWidget {
         assert(contactAccountNumber != null),
         super(key: key);
 
+  final int? contactAccountNumber;
+  final String? contactName;
+
   @override
   State<TransferForm> createState() => _TransferFormState();
 }
 
 class _TransferFormState extends State<TransferForm> {
+  late String userPassword;
+
   final TextEditingController _amountController = TextEditingController();
   final TextEditingController _descriptionController = TextEditingController();
   final TransactionWebclient _webclient = TransactionWebclient();
-  late String userPassword;
+
+  void _saveTransfer(BuildContext context, String password) async {
+    try {
+      await _webclient.save(
+        Transaction(
+          double.tryParse(_amountController.text),
+          Contact(
+            0,
+            widget.contactName,
+            widget.contactAccountNumber,
+          ),
+        ),
+        password.toString(),
+      );
+      await showDialog(
+          context: context,
+          builder: (BuildContext contextDialog) {
+            return SuccessDialog('successful transfer');
+          });
+      Navigator.pop(context);
+      Navigator.pop(context);
+    } catch (err) {
+      showDialog(
+          context: context,
+          builder: (BuildContext contextDialog) {
+            return FailureDialog(err.toString());
+          });
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -78,7 +108,7 @@ class _TransferFormState extends State<TransferForm> {
                   onPressed: () async {
                     //Inserir AlertDialog
 
-                    switch (await showDialog(
+                    await showDialog(
                         context: context,
                         builder: (BuildContext contextDialog) {
                           return TransactionAuthDialog(
@@ -86,68 +116,13 @@ class _TransferFormState extends State<TransferForm> {
                               return _saveTransfer(context, passwordController);
                             },
                           );
-                        })) {
-                      case IsAuthenticated.authenticated:
-                        break;
-
-                      case IsAuthenticated.notAtuthenticated:
-                        return showDialog(
-                            context: context,
-                            builder: (BuildContext context) {
-                              return AlertDialog(
-                                content: Text('Incorrect Password'),
-                                actions: [
-                                  TextButton(
-                                    onPressed: () {
-                                      Navigator.pop(context);
-                                    },
-                                    child: Text('Try Again'),
-                                  ),
-                                ],
-                              );
-                            });
-
-                      case IsAuthenticated.cancelled:
-                        break;
-
-                      case IsAuthenticated.badRequest:
-                        return showDialog(
-                            context: context,
-                            builder: (BuildContext context) {
-                              return AlertDialog(
-                                content: Text(
-                                    'Blank value, please fill the amount to transfer'),
-                                actions: [
-                                  TextButton(
-                                    onPressed: () {
-                                      Navigator.pop(context);
-                                    },
-                                    child: Text('Try Again'),
-                                  ),
-                                ],
-                              );
-                            });
-                    }
+                        });
                   },
                   child: Text('Confirmar Transferência')),
             ),
           ],
         ),
       ),
-    );
-  }
-
-  Future<Response> _saveTransfer(BuildContext context, String password) {
-    return _webclient.save(
-      Transaction(
-        double.tryParse(_amountController.text),
-        Contact(
-          0,
-          widget.contactName,
-          widget.contactAccountNumber,
-        ),
-      ),
-      password.toString(),
     );
   }
 }
