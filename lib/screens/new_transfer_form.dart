@@ -1,9 +1,12 @@
+import 'dart:async';
 import 'package:bytebank_final/components/editor.dart';
+import 'package:bytebank_final/components/loading_circle.dart';
 import 'package:bytebank_final/components/transaction_auth_dialog.dart';
 import 'package:bytebank_final/http/webclients/transactions_webclient.dart';
 import 'package:bytebank_final/models/contact.dart';
 import 'package:bytebank_final/models/transaction.dart';
 import 'package:flutter/material.dart';
+import 'package:uuid/uuid.dart';
 import '../components/response_dialog.dart';
 
 class TransferForm extends StatefulWidget {
@@ -23,43 +26,71 @@ class TransferForm extends StatefulWidget {
 }
 
 class _TransferFormState extends State<TransferForm> {
-  late String userPassword;
+  bool _sending = false;
+  final String transactionId = Uuid().v4();
 
   final TextEditingController _amountController = TextEditingController();
   final TextEditingController _descriptionController = TextEditingController();
   final TransactionWebclient _webclient = TransactionWebclient();
 
   void _saveTransfer(BuildContext context, String password) async {
+    setState(() {
+      _sending = true;
+    });
     try {
-      await _webclient.save(
-        Transaction(
-          double.tryParse(_amountController.text),
-          Contact(
-            0,
-            widget.contactName,
-            widget.contactAccountNumber,
-          ),
-        ),
-        password.toString(),
-      );
-      await showDialog(
-          context: context,
-          builder: (BuildContext contextDialog) {
-            return SuccessDialog('successful transfer');
-          });
-      Navigator.pop(context);
-      Navigator.pop(context);
+      await _send(password);
+      await _showSuccessfulMessage(context);
     } catch (err) {
-      showDialog(
-          context: context,
-          builder: (BuildContext contextDialog) {
-            return FailureDialog(err.toString());
-          });
+      if (err is TimeoutException) {
+        _showFailureMessage(context, message: 'timeout exception');
+      } else if (err is HttpException) {
+        _showFailureMessage(context, message: err.message);
+      } else {
+        _showFailureMessage(context, message: err as String);
+      }
     }
+    setState(() {
+      _sending = false;
+    });
+  }
+
+  void _showFailureMessage(BuildContext context,
+      {String message = 'unknown error'}) {
+    showDialog(
+        context: context,
+        builder: (BuildContext contextDialog) {
+          return FailureDialog(message);
+        });
+  }
+
+  Future<void> _send(String password) async {
+    await _webclient.save(
+      Transaction(
+        transactionId,
+        double.tryParse(_amountController.text),
+        Contact(
+          0,
+          widget.contactName,
+          widget.contactAccountNumber,
+        ),
+      ),
+      password.toString(),
+    );
+  }
+
+  Future<void> _showSuccessfulMessage(BuildContext context) async {
+    await showDialog(
+        context: context,
+        builder: (BuildContext contextDialog) {
+          return SuccessDialog('successful transfer');
+        });
+    Navigator.pop(context);
+    Navigator.pop(context);
   }
 
   @override
   Widget build(BuildContext context) {
+    print('transaction form id: $transactionId');
     return Scaffold(
       appBar: AppBar(
         title: Text('Nova Transferência'),
@@ -68,6 +99,7 @@ class _TransferFormState extends State<TransferForm> {
         padding: const EdgeInsets.all(8.0),
         child: ListView(
           children: <Widget>[
+            Visibility(visible: _sending, child: LinearProgressIndicator()),
             Padding(
               padding: const EdgeInsets.all(8.0),
               child: Text(
@@ -113,6 +145,7 @@ class _TransferFormState extends State<TransferForm> {
                         builder: (BuildContext contextDialog) {
                           return TransactionAuthDialog(
                             onConfirm: (passwordController) {
+                              Navigator.pop(context);
                               return _saveTransfer(context, passwordController);
                             },
                           );

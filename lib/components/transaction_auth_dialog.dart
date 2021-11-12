@@ -1,3 +1,4 @@
+import 'package:bytebank_final/components/loading_circle.dart';
 import 'package:flutter/material.dart';
 
 class TransactionAuthDialog extends StatefulWidget {
